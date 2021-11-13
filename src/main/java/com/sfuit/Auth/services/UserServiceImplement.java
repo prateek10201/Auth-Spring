@@ -3,6 +3,8 @@ package com.sfuit.Auth.services;
 import com.sfuit.Auth.entity.Token;
 import com.sfuit.Auth.entity.User;
 import com.sfuit.Auth.exceptions.EtAuthException;
+import com.sfuit.Auth.exceptions.EtBadRequestException;
+import com.sfuit.Auth.exceptions.EtResourceNotFoundException;
 import com.sfuit.Auth.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +27,7 @@ public class UserServiceImplement implements UserService{
     }
 
     @Override
-    public User registerUser(String name, String email, String dob, String phone, String password, String otp, String token, String is_verified, String device_id) throws EtAuthException {
+    public User registerUser(String name, String email, String dob, String phone, String password, String otp, String token, String is_verified, String device_id, String device_token) throws EtAuthException {
 
         Pattern pattern = Pattern.compile("^(.+)@(.+)$");
         Pattern phone_pattern = Pattern.compile("^?[5-9][0-9]{9}$");
@@ -46,7 +48,7 @@ public class UserServiceImplement implements UserService{
             throw new EtAuthException("Email already in use");
         if(count_phone>0)
             throw new EtAuthException("Phone number already in use");
-        Integer userId = userRepository.create(name, email, dob, phone, password, otp, token, is_verified, device_id);
+        Integer userId = userRepository.create(name, email, dob, phone, password, otp, token, is_verified, device_id, device_token);
         return userRepository.findById(userId);
     }
 
@@ -63,5 +65,16 @@ public class UserServiceImplement implements UserService{
 
         Integer tokenId = userRepository.addUpdatedToken(email, token, device_id);
         return userRepository.findByEmail(email);
+    }
+
+    @Override
+    public User putDeviceToken(String email, String device_token) throws EtResourceNotFoundException {
+
+        if(email == null)
+            throw new EtResourceNotFoundException("Email cant be empty");
+            email = email.toLowerCase();
+        if(device_token == null)
+            throw new EtResourceNotFoundException("Device_token cant be empty");
+        return userRepository.findByEmailandUpdateDeviceToken(email, device_token);
     }
 }

@@ -12,8 +12,9 @@ public class User {
     private String token;
     private String is_verified;
     private String device_id;
+    private String device_token;
 
-    public User(Integer userId, String name, String email, String dob, String phone, String password, String otp, String token, String is_verified, String device_id) {
+    public User(Integer userId, String name, String email, String dob, String phone, String password, String otp, String token, String is_verified, String device_id, String device_token) {
         this.userId = userId;
         this.name = name;
         this.email = email;
@@ -24,6 +25,15 @@ public class User {
         this.token = token;
         this.is_verified = is_verified;
         this.device_id = device_id;
+        this.device_token = device_token;
+    }
+
+    public String getDevice_token() {
+        return device_token;
+    }
+
+    public void setDevice_token(String device_token) {
+        this.device_token = device_token;
     }
 
     public Integer getUserId() {

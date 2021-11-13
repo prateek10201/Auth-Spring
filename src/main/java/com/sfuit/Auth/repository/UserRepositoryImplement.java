@@ -3,6 +3,7 @@ package com.sfuit.Auth.repository;
 import com.sfuit.Auth.entity.Token;
 import com.sfuit.Auth.entity.User;
 import com.sfuit.Auth.exceptions.EtAuthException;
+import com.sfuit.Auth.exceptions.EtResourceNotFoundException;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -18,24 +19,25 @@ import java.sql.Statement;
 @Repository
 public class UserRepositoryImplement implements UserRepository{
 
-    private static final String SQL_CREATE = "INSERT INTO SFUIT_USERS(USER_ID, NAME, EMAIL, DOB, PHONE, PASSWORD, OTP, TOKEN, IS_VERIFIED, DEVICE_ID) VALUES(NEXTVAL('SFUIT_USERS_SEQ'), ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    private static final String SQL_CREATE = "INSERT INTO SFUIT_USERS(USER_ID, NAME, EMAIL, DOB, PHONE, PASSWORD, OTP, TOKEN, IS_VERIFIED, DEVICE_ID, DEVICE_TOKEN) VALUES(NEXTVAL('SFUIT_USERS_SEQ'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     private static final String SQL_COUNT_BY_EMAIL = "SELECT COUNT(*) FROM SFUIT_USERS WHERE EMAIL = ?";
     private static final String SQL_COUNT_BY_PHONE = "SELECT COUNT(*) FROM SFUIT_USERS WHERE PHONE = ?";
-    private static final String SQL_FIND_BY_ID = "SELECT USER_ID, NAME, EMAIL, DOB, PHONE, PASSWORD, OTP, TOKEN, IS_VERIFIED, DEVICE_ID " +
+    private static final String SQL_FIND_BY_ID = "SELECT USER_ID, NAME, EMAIL, DOB, PHONE, PASSWORD, OTP, TOKEN, IS_VERIFIED, DEVICE_ID, DEVICE_TOKEN " +
             "FROM SFUIT_USERS WHERE USER_ID = ?";
-    private static final String SQL_FIND_BY_EMAIL = "SELECT USER_ID, NAME, EMAIL, DOB, PHONE, PASSWORD, OTP, TOKEN, IS_VERIFIED, DEVICE_ID " +
+    private static final String SQL_FIND_BY_EMAIL = "SELECT USER_ID, NAME, EMAIL, DOB, PHONE, PASSWORD, OTP, TOKEN, IS_VERIFIED, DEVICE_ID, DEVICE_TOKEN " +
             "FROM SFUIT_USERS WHERE EMAIL = ?";
     private  static final String SQL_UPDATE_ROW = "UPDATE SFUIT_USERS SET IS_VERIFIED = 'true', OTP = null WHERE EMAIL = ? ";
     private static final String SQL_UPDATE_DEVICES_ROW = "UPDATE SFUIT_DEVICES SET DEVICE_ISVERIFIED = 'true' FROM SFUIT_USERS " +
             "WHERE SFUIT_DEVICES.DEVICE_ID = SFUIT_USERS.DEVICE_ID AND SFUIT_USERS.EMAIL = ?";
     private static final String SQL_CREATE_TOKENROW = "INSERT INTO SFUIT_TOKEN(TOKEN_ID, EMAIL, TOKEN_UPDATED, DEVICE_ID) VALUES(NEXTVAL('SFUIT_TOKEN_SEQ'), ?, ?, ?)";
     private static final String SQL_FIND_BY_EMAIL_TOKEN = "SELECT TOKEN_ID, EMAIL, TOKEN_UPDATED, DEVICE_ID FROM SFUIT_TOKEN WHERE EMAIL = ?";
+    private static final String SQL_UPDATE_DEVICE_TOKEN = "UPDATE SFUIT_USERS SET DEVICE_TOKEN = ? WHERE EMAIL = ? ";
 
     @Autowired
     JdbcTemplate jdbcTemplate;
 
     @Override
-    public Integer create(String name, String email, String dob, String phone, String password, String otp, String token, String is_verified, String device_id) throws EtAuthException {
+    public Integer create(String name, String email, String dob, String phone, String password, String otp, String token, String is_verified, String device_id, String device_token) throws EtAuthException {
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt(10));
         try{
             //for holding key value of id
@@ -53,6 +55,7 @@ public class UserRepositoryImplement implements UserRepository{
                 ps.setString(7,token);
                 ps.setString(8,is_verified);
                 ps.setString(9,device_id);
+                ps.setString(10,device_token);
                 return ps;
             }, keyHolder);
             return (Integer) keyHolder.getKeys().get("USER_ID");
@@ -126,6 +129,21 @@ public class UserRepositoryImplement implements UserRepository{
         }
     }
 
+    @Override
+    public User findByEmailandUpdateDeviceToken(String email, String device_token) {
+
+        try {
+            User user = jdbcTemplate.queryForObject(SQL_FIND_BY_EMAIL, userRowMapper, new Object[]{email});
+            if(!email.equals(user.getEmail()))
+                throw new EtResourceNotFoundException("Invalid Email");
+            jdbcTemplate.update(SQL_UPDATE_DEVICE_TOKEN, device_token, email);
+            return user;
+        }catch (EmptyResultDataAccessException e)
+        {
+            throw new EtResourceNotFoundException("Invalid Email");
+        }
+    }
+
 
     @Override
     public Integer getCountByPhone(String phone) {
@@ -142,7 +160,8 @@ public class UserRepositoryImplement implements UserRepository{
                         rs.getString("OTP"),
                         rs.getString("TOKEN"),
                         rs.getString("IS_VERIFIED"),
-                        rs.getString("DEVICE_ID"));
+                        rs.getString("DEVICE_ID"),
+                        rs.getString("DEVICE_TOKEN"));
     });
 
     private RowMapper<Token> tokenRowMapper = ((rs, rowNum) -> {

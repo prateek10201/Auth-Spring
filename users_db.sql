@@ -24,7 +24,8 @@ password text not null,
 otp varchar(6),
 token text not null,
 is_verified varchar(10),
-device_id varchar(30) not null
+device_id varchar(30) not null,
+device_token text
 );
 
 
