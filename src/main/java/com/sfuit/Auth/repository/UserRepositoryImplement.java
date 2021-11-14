@@ -61,7 +61,7 @@ public class UserRepositoryImplement implements UserRepository{
             return (Integer) keyHolder.getKeys().get("USER_ID");
         }catch(Exception e)
         {
-            throw new EtAuthException("Invalid details. Failed to create account");
+            throw new EtAuthException(e.toString());
         }
     }
 

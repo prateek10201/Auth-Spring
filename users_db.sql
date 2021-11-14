@@ -17,7 +17,7 @@ device_isverified varchar(5) not null
 create table sfuit_users(
 user_id integer primary key not null,
 name varchar(20) not null,
-email varchar(30) not null,
+email varchar(50) not null,
 dob varchar(30) not null,
 phone varchar(20) not null,
 password text not null,
