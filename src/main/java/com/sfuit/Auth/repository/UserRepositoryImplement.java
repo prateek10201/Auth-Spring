@@ -1,5 +1,6 @@
 package com.sfuit.Auth.repository;
 
+import com.sfuit.Auth.entity.Devices;
 import com.sfuit.Auth.entity.Token;
 import com.sfuit.Auth.entity.User;
 import com.sfuit.Auth.exceptions.EtAuthException;
@@ -32,6 +33,7 @@ public class UserRepositoryImplement implements UserRepository{
     private static final String SQL_CREATE_TOKENROW = "INSERT INTO SFUIT_TOKEN(TOKEN_ID, EMAIL, TOKEN_UPDATED, DEVICE_ID) VALUES(NEXTVAL('SFUIT_TOKEN_SEQ'), ?, ?, ?)";
     private static final String SQL_FIND_BY_EMAIL_TOKEN = "SELECT TOKEN_ID, EMAIL, TOKEN_UPDATED, DEVICE_ID FROM SFUIT_TOKEN WHERE EMAIL = ?";
     private static final String SQL_UPDATE_DEVICE_TOKEN = "UPDATE SFUIT_USERS SET DEVICE_TOKEN = ? WHERE EMAIL = ? ";
+    private static final String SQL_FIND_BY_DEVICEID = "SELECT DEVICE_NUM, DEVICE_ID, SENSORS, DEVICE_ISVERIFIED FROM SFUIT_DEVICES NATURAL JOIN SFUIT_USERS WHERE SFUIT_USERS.EMAIL = ?";
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -88,7 +90,8 @@ public class UserRepositoryImplement implements UserRepository{
     public User findByEmailandPassword(String email, String password) throws EtAuthException {
         try{
             User user = jdbcTemplate.queryForObject(SQL_FIND_BY_EMAIL, userRowMapper, new Object[]{email});
-            if("true".equals(user.getIs_verified())) {
+            Devices devices = jdbcTemplate.queryForObject(SQL_FIND_BY_DEVICEID, devicesRowMapper, new Object[]{email});
+            if("true".equals(user.getIs_verified()) && "true".equals(devices.getDevice_isverified())) {
                 if (!BCrypt.checkpw(password, user.getPassword()))
                     throw new EtAuthException("Invalid email/password");
             }
@@ -169,5 +172,12 @@ public class UserRepositoryImplement implements UserRepository{
                          rs.getString("EMAIL"),
                          rs.getString("UPDATED_TOKEN"),
                          rs.getString("DEVICE_ID"));
+    });
+
+    private RowMapper<Devices> devicesRowMapper = ((rs, rowNum) -> {
+        return new Devices(rs.getInt("DEVICE_NUM"),
+                rs.getString("DEVICE_ID"),
+                rs.getString("SENSORS"),
+                rs.getString("DEVICE_ISVERIFIED"));
     });
 }
