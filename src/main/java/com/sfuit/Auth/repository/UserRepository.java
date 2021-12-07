@@ -6,7 +6,7 @@ import com.sfuit.Auth.exceptions.EtAuthException;
 
 public interface UserRepository {
 
-    Integer create(String name, String email, String dob, String phone, String password, String otp, String token, String is_verified, String device_id, String device_token) throws EtAuthException;
+    Integer create(String name, String email, String dob, String phone, String password, String otp, String token, String is_verified, String device_id, String device_token, String fpverified_otp) throws EtAuthException;
 
     User findByEmailandPassword(String email, String password) throws EtAuthException;
 
@@ -21,4 +21,10 @@ public interface UserRepository {
     Token findByEmail(String email);
 
     User findByEmailandUpdateDeviceToken(String email, String device_token);
+
+    User findByEmailandUpdateOTP(String email, String otp);
+    
+    User forgotPasswordOtpVerificaiton(String email, String otp);
+
+    User updateUserPassword(String email, String password);
 }

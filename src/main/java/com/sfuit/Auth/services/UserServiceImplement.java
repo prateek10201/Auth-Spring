@@ -27,7 +27,13 @@ public class UserServiceImplement implements UserService{
     }
 
     @Override
-    public User registerUser(String name, String email, String dob, String phone, String password, String otp, String token, String is_verified, String device_id, String device_token) throws EtAuthException {
+    public User updateUserPassword(String email, String password) {
+        if(email != null) email = email.toLowerCase();
+        return userRepository.updateUserPassword(email, password);
+    }
+
+    @Override
+    public User registerUser(String name, String email, String dob, String phone, String password, String otp, String token, String is_verified, String device_id, String device_token, String fpverified_otp) throws EtAuthException {
 
         Pattern pattern = Pattern.compile("^(.+)@(.+)$");
         Pattern phone_pattern = Pattern.compile("^?[5-9][0-9]{9}$");
@@ -48,7 +54,7 @@ public class UserServiceImplement implements UserService{
             throw new EtAuthException("Email already in use");
         if(count_phone>0)
             throw new EtAuthException("Phone number already in use");
-        Integer userId = userRepository.create(name, email, dob, phone, password, otp, token, is_verified, device_id, device_token);
+        Integer userId = userRepository.create(name, email, dob, phone, password, otp, token, is_verified, device_id, device_token, fpverified_otp);
         return userRepository.findById(userId);
     }
 
@@ -57,6 +63,13 @@ public class UserServiceImplement implements UserService{
         if(email != null) email = email.toLowerCase();
         return userRepository.findByEmailandOTP(email, otp);
     }
+
+    @Override
+    public User verifyForgotPassOtp(String email, String otp) {
+        if(email != null) email = email.toLowerCase();
+        return userRepository.forgotPasswordOtpVerificaiton(email, otp);
+    }
+
 
     @Override
     public Token addToken(String email, String token, String device_id) {
@@ -77,4 +90,11 @@ public class UserServiceImplement implements UserService{
             throw new EtResourceNotFoundException("Device_token cant be empty");
         return userRepository.findByEmailandUpdateDeviceToken(email, device_token);
     }
+
+    @Override
+    public User updateUser(String email, String otp) {
+        if(email != null) email = email.toLowerCase();
+        return userRepository.findByEmailandUpdateOTP(email, otp);
+    }
+
 }

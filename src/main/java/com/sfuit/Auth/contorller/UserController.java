@@ -65,10 +65,31 @@ public class UserController{
         String is_verified = "false";
         String device_id  = (String) userMap.get("device_id");
         String device_token = null;
-        User user= userService.registerUser(name, email, dob, phone, password, otp, token, is_verified, device_id, device_token);
+        String fpverified_otp = "false";
+        User user= userService.registerUser(name, email, dob, phone, password, otp, token, is_verified, device_id, device_token, fpverified_otp);
         triggerMail(email, name, otp);
         return new ResponseEntity<>(generateJWTToken(user), HttpStatus.OK);
     }
+
+    @PostMapping("/forgotPassword")
+    public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody Map<String, Object> userMap)
+    {
+        String email = (String) userMap.get("email");
+        String otp = Integer.toString(rand_otp());
+        User user = userService.updateUser(email, otp);
+        triggerMail(email, otp);
+        return new ResponseEntity<>(forgotPasswordConfirmation(user), HttpStatus.OK);
+    }
+
+    @PostMapping("/updatePassword")
+    public ResponseEntity<Map<String, String>> updatePassword(@RequestBody Map<String, Object> userMap)
+    {
+        String email = (String) userMap.get("email");
+        String password = (String) userMap.get("password");
+        User user = userService.updateUserPassword(email, password);
+        return new ResponseEntity<>(passwordUpdationConfirmaftion(user), HttpStatus.OK);
+    }
+
 
     @PostMapping("/verification")
     public ResponseEntity<Map<String, String>> verifyUser(@RequestBody Map<String, Object> userMap)
@@ -76,6 +97,15 @@ public class UserController{
         String email = (String) userMap.get("email");
         String otp = (String) userMap.get("otp");
         User user = userService.verifyUser(email, otp);
+        return new ResponseEntity<>(generateJWTToken(user), HttpStatus.OK);
+    }
+
+    @PostMapping("/verifyOtp")
+    public ResponseEntity<Map<String, String>> verifyOtp(@RequestBody Map<String, Object> userMap)
+    {
+        String email = (String) userMap.get("email");
+        String otp = (String) userMap.get("otp");
+        User user = userService.verifyForgotPassOtp(email, otp);
         return new ResponseEntity<>(generateJWTToken(user), HttpStatus.OK);
     }
 
@@ -88,6 +118,14 @@ public class UserController{
         return new ResponseEntity<>(fetchRelatedRow(user), HttpStatus.OK);
     }
 
+    private Map<String, String > forgotPasswordConfirmation(User user)
+    {
+        Map<String, String> map = new HashMap<>();
+        map.put("email", user.getEmail());
+        map.put("OTP", "Sent");
+        return map;
+    }
+
      private Map<String, String > fetchRelatedRow(User user)
      {
          Map<String, String> map = new HashMap<>();
@@ -95,6 +133,13 @@ public class UserController{
          map.put("device_token", user.getDevice_token());
          return map;
      }
+
+    private Map<String, String> passwordUpdationConfirmaftion(User user) {
+        Map<String, String> map = new HashMap<>();
+        map.put("email", user.getEmail());
+        map.put("Password", "updated");
+        return map;
+    }
 
     //JWT token is created, user is parameter and returns map<string,string>
     private Map<String, String > generateJWTToken(User user)
@@ -155,5 +200,10 @@ public class UserController{
     public void triggerMail(String email, String name, String otp)
     {
         emailSenderService.sendSimpleEmail(email, "Hi "+name+"\n"+otp+"\nThis is your otp \n Valid for 5 minutes only", "OTP Verification");
+    }
+
+    public void triggerMail(String email, String otp)
+    {
+        emailSenderService.sendSimpleEmail(email, "Hello,\n"+otp+"\nThis is your otp \n Valid for 5 minutes only", "OTP Verification");
     }
 }

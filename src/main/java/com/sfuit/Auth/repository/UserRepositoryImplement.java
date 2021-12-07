@@ -20,7 +20,7 @@ import java.sql.Statement;
 @Repository
 public class UserRepositoryImplement implements UserRepository{
 
-    private static final String SQL_CREATE = "INSERT INTO SFUIT_USERS(USER_ID, NAME, EMAIL, DOB, PHONE, PASSWORD, OTP, TOKEN, IS_VERIFIED, DEVICE_ID, DEVICE_TOKEN) VALUES(NEXTVAL('SFUIT_USERS_SEQ'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    private static final String SQL_CREATE = "INSERT INTO SFUIT_USERS(USER_ID, NAME, EMAIL, DOB, PHONE, PASSWORD, OTP, TOKEN, IS_VERIFIED, DEVICE_ID, DEVICE_TOKEN, FPVERIFIED_OTP) VALUES(NEXTVAL('SFUIT_USERS_SEQ'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     private static final String SQL_COUNT_BY_EMAIL = "SELECT COUNT(*) FROM SFUIT_USERS WHERE EMAIL = ?";
     private static final String SQL_COUNT_BY_PHONE = "SELECT COUNT(*) FROM SFUIT_USERS WHERE PHONE = ?";
     private static final String SQL_FIND_BY_ID = "SELECT USER_ID, NAME, EMAIL, DOB, PHONE, PASSWORD, OTP, TOKEN, IS_VERIFIED, DEVICE_ID, DEVICE_TOKEN " +
@@ -34,12 +34,17 @@ public class UserRepositoryImplement implements UserRepository{
     private static final String SQL_FIND_BY_EMAIL_TOKEN = "SELECT TOKEN_ID, EMAIL, TOKEN_UPDATED, DEVICE_ID FROM SFUIT_TOKEN WHERE EMAIL = ?";
     private static final String SQL_UPDATE_DEVICE_TOKEN = "UPDATE SFUIT_USERS SET DEVICE_TOKEN = ? WHERE EMAIL = ? ";
     private static final String SQL_FIND_BY_DEVICEID = "SELECT DEVICE_NUM, DEVICE_ID, SENSORS, DEVICE_ISVERIFIED FROM SFUIT_DEVICES NATURAL JOIN SFUIT_USERS WHERE SFUIT_USERS.EMAIL = ?";
+    private static final String SQL_UPDATE_OTP = "UPDATE SFUIT_USERS SET OTP = ? WHERE EMAIL = ? ";
+    private static final String SQL_UPDATE_ROW_FOR_OTP = "UPDATE SFUIT_USERS SET  OTP = null WHERE EMAIL = ? ";
+    private static final String SQL_UPDATE_PASSWORD = "UPDATE SFUIT_USERS SET PASSWORD = ? WHERE EMAIL = ? ";
+    private static final String SQL_UPDATE_OTP_FPVERIFYOTP = "UPDATE SFUIT_USERS SET OTP = null, FPVERIFIED_OTP = 'false' WHERE EMAIL = ? ";
+    private static final String SQL_UPDATE_FPVERIFIED_OTP = "UPDATE SFUIT_USERS SET FPVERIFIED_OTP = 'true' WHERE EMAIL = ? ";
 
     @Autowired
     JdbcTemplate jdbcTemplate;
 
     @Override
-    public Integer create(String name, String email, String dob, String phone, String password, String otp, String token, String is_verified, String device_id, String device_token) throws EtAuthException {
+    public Integer create(String name, String email, String dob, String phone, String password, String otp, String token, String is_verified, String device_id, String device_token, String fpverified_otp) throws EtAuthException {
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt(10));
         try{
             //for holding key value of id
@@ -64,6 +69,24 @@ public class UserRepositoryImplement implements UserRepository{
         }catch(Exception e)
         {
             throw new EtAuthException(e.toString());
+        }
+    }
+
+    @Override
+    public User updateUserPassword(String email, String password) {
+
+        try{
+            User user = jdbcTemplate.queryForObject(SQL_FIND_BY_EMAIL, userRowMapper, new Object[]{email});
+            if(!email.equals(user.getEmail()))
+                throw new EtAuthException("Invalid email");
+            if(!"true".equals(user.getFpverified_otp()))
+                throw new EtAuthException("Tresspass! Password Updation not allowed");
+            String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt(10));
+            jdbcTemplate.update(SQL_UPDATE_PASSWORD, hashedPassword, email);
+            return user;
+        }catch (EmptyResultDataAccessException e)
+        {
+            throw new EtAuthException("Invalid Email");
         }
     }
 
@@ -97,6 +120,7 @@ public class UserRepositoryImplement implements UserRepository{
             }
             else
                 throw new EtAuthException("Verification failed");
+            jdbcTemplate.update(SQL_UPDATE_OTP_FPVERIFYOTP, email);
             return user;
         }catch (EmptyResultDataAccessException e) {
             throw new EtAuthException("Invalid email/password");
@@ -133,6 +157,35 @@ public class UserRepositoryImplement implements UserRepository{
     }
 
     @Override
+    public User findByEmailandUpdateOTP(String email, String otp) {
+        try{
+            User user = jdbcTemplate.queryForObject(SQL_FIND_BY_EMAIL, userRowMapper, new Object[]{email});
+            if(!email.equals(user.getEmail()))
+                throw new EtAuthException("Invalid email");
+            jdbcTemplate.update(SQL_UPDATE_OTP, otp, email);
+            return user;
+        }catch (EmptyResultDataAccessException e)
+        {
+            throw new EtAuthException("Invalid Email");
+        }
+    }
+
+    @Override
+    public User forgotPasswordOtpVerificaiton(String email, String otp) {
+        try {
+            User user = jdbcTemplate.queryForObject(SQL_FIND_BY_EMAIL, userRowMapper, new Object[]{email});
+            if(!otp.equals(user.getOtp()))
+                throw new EtAuthException("Invalid email/otp");
+            jdbcTemplate.update(SQL_UPDATE_ROW_FOR_OTP, email);
+            jdbcTemplate.update(SQL_UPDATE_FPVERIFIED_OTP, email);
+            return user;
+        }catch (EmptyResultDataAccessException e){
+            throw new EtAuthException("Invalid email/otp");
+        }
+    }
+
+
+    @Override
     public User findByEmailandUpdateDeviceToken(String email, String device_token) {
 
         try {
@@ -164,7 +217,8 @@ public class UserRepositoryImplement implements UserRepository{
                         rs.getString("TOKEN"),
                         rs.getString("IS_VERIFIED"),
                         rs.getString("DEVICE_ID"),
-                        rs.getString("DEVICE_TOKEN"));
+                        rs.getString("DEVICE_TOKEN"),
+                        rs.getString("FPVERIFIED_OTP"));
     });
 
     private RowMapper<Token> tokenRowMapper = ((rs, rowNum) -> {

@@ -25,7 +25,8 @@ otp varchar(6),
 token text not null,
 is_verified varchar(10),
 device_id varchar(30) not null,
-device_token text
+device_token text,
+fpverified_otp varchar(5) not null
 );
 
 

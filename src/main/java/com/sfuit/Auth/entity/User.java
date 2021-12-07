@@ -13,8 +13,9 @@ public class User {
     private String is_verified;
     private String device_id;
     private String device_token;
+    private String fpverified_otp;
 
-    public User(Integer userId, String name, String email, String dob, String phone, String password, String otp, String token, String is_verified, String device_id, String device_token) {
+    public User(Integer userId, String name, String email, String dob, String phone, String password, String otp, String token, String is_verified, String device_id, String device_token, String fpverified_otp) {
         this.userId = userId;
         this.name = name;
         this.email = email;
@@ -26,6 +27,15 @@ public class User {
         this.is_verified = is_verified;
         this.device_id = device_id;
         this.device_token = device_token;
+        this.fpverified_otp = fpverified_otp;
+    }
+
+    public String getFpverified_otp() {
+        return fpverified_otp;
+    }
+
+    public void setFpverified_otp(String fpverified_otp) {
+        this.fpverified_otp = fpverified_otp;
     }
 
     public String getDevice_token() {
