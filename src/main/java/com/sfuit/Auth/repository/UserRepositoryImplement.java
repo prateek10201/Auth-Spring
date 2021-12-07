@@ -23,9 +23,9 @@ public class UserRepositoryImplement implements UserRepository{
     private static final String SQL_CREATE = "INSERT INTO SFUIT_USERS(USER_ID, NAME, EMAIL, DOB, PHONE, PASSWORD, OTP, TOKEN, IS_VERIFIED, DEVICE_ID, DEVICE_TOKEN, FPVERIFIED_OTP) VALUES(NEXTVAL('SFUIT_USERS_SEQ'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     private static final String SQL_COUNT_BY_EMAIL = "SELECT COUNT(*) FROM SFUIT_USERS WHERE EMAIL = ?";
     private static final String SQL_COUNT_BY_PHONE = "SELECT COUNT(*) FROM SFUIT_USERS WHERE PHONE = ?";
-    private static final String SQL_FIND_BY_ID = "SELECT USER_ID, NAME, EMAIL, DOB, PHONE, PASSWORD, OTP, TOKEN, IS_VERIFIED, DEVICE_ID, DEVICE_TOKEN " +
+    private static final String SQL_FIND_BY_ID = "SELECT USER_ID, NAME, EMAIL, DOB, PHONE, PASSWORD, OTP, TOKEN, IS_VERIFIED, DEVICE_ID, DEVICE_TOKEN, FPVERIFIED_OTP " +
             "FROM SFUIT_USERS WHERE USER_ID = ?";
-    private static final String SQL_FIND_BY_EMAIL = "SELECT USER_ID, NAME, EMAIL, DOB, PHONE, PASSWORD, OTP, TOKEN, IS_VERIFIED, DEVICE_ID, DEVICE_TOKEN " +
+    private static final String SQL_FIND_BY_EMAIL = "SELECT USER_ID, NAME, EMAIL, DOB, PHONE, PASSWORD, OTP, TOKEN, IS_VERIFIED, DEVICE_ID, DEVICE_TOKEN, FPVERIFIED_OTP " +
             "FROM SFUIT_USERS WHERE EMAIL = ?";
     private  static final String SQL_UPDATE_ROW = "UPDATE SFUIT_USERS SET IS_VERIFIED = 'true', OTP = null WHERE EMAIL = ? ";
     private static final String SQL_UPDATE_DEVICES_ROW = "UPDATE SFUIT_DEVICES SET DEVICE_ISVERIFIED = 'true' FROM SFUIT_USERS " +
@@ -63,6 +63,7 @@ public class UserRepositoryImplement implements UserRepository{
                 ps.setString(8,is_verified);
                 ps.setString(9,device_id);
                 ps.setString(10,device_token);
+                ps.setString(11,fpverified_otp);
                 return ps;
             }, keyHolder);
             return (Integer) keyHolder.getKeys().get("USER_ID");
